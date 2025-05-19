@@ -16,7 +16,7 @@ enum Side {
 }
 
 struct Chess {
-    board: Vec<char>, // 10x10 grid including borders and newlines
+    board: Vec<char>,
     side: Side,
     pieces: HashMap<char, char>,
 }
@@ -50,16 +50,19 @@ impl Chess {
 
         // Create 10x10 board with borders
         let mut board = Vec::new();
+        
         // Top padding: two empty rows
         for _ in 0..2 {
             board.extend("         \n".chars());
         }
+        
         // Board rows with leading space
         for line in board_chars.lines() {
             board.push(' ');
             board.extend(line.chars());
             board.push('\n');
         }
+
         // Bottom padding: two empty rows
         for _ in 0..2 {
             board.extend("         \n".chars());
@@ -96,12 +99,16 @@ impl Chess {
             Side::Black => 1,
         };
         println!("{}\n{}", board_str, side_num);
-        println!("{}", self.board.len());
+    }
+
+    fn generate_moves(&self) {
+        print!("Hi");
     }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let chess = Chess::new("settings.json")?;
     chess.print_board();
+
     Ok(())
 }
