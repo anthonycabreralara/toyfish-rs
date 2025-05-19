@@ -12,8 +12,8 @@ This project is **not meant to be competitive** with modern engines like Stockfi
 
 ### Prerequisites
 
-- Rust (latest stable)  
-  You can install it via [rustup.rs](https://rustup.rs)
+Rust (latest stable)  
+You can install it via [rustup.rs](https://rustup.rs)
 
 ### Build and Run
 
