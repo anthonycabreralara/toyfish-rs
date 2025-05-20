@@ -7,6 +7,7 @@ use std::io::Read;
 struct Settings {
     fen: String,
     pieces: HashMap<char, char>,
+    colors: HashMap<char, i32>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -19,6 +20,7 @@ struct Chess {
     board: Vec<char>,
     side: Side,
     pieces: HashMap<char, char>,
+    colors: HashMap<char, i32>,
 }
 
 impl Chess {
@@ -79,6 +81,7 @@ impl Chess {
             board,
             side,
             pieces: settings.pieces,
+            colors: settings.colors,
         })
     }
 
@@ -102,13 +105,22 @@ impl Chess {
     }
 
     fn generate_moves(&self) {
-        print!("Hi");
+        for i in 0..self.board.len() {
+            let piece = self.board[i];
+            if !matches!(piece, ' ' | '.' | '\n') {
+                println!("{}: {}", i, piece);
+            }
+        }
+
     }
+
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let chess = Chess::new("settings.json")?;
-    chess.print_board();
+    // chess.print_board()
+    // chess.generate_moves();
+    print!("{:?}", chess.colors);
 
     Ok(())
 }
