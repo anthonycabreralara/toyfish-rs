@@ -1,3 +1,5 @@
+> 🚧 **This project is currently a work in progress.** Expect incomplete features and active development.
+
 # 🐟 Toyfish (Rust Edition)
 
 A Rust implementation of the [Toyfish](https://www.chessprogramming.org/Toy_Fish) chess engine — a minimal, educational chess engine designed for simplicity and clarity. This project aims to bring Toyfish to Rust with a clean architecture and modern Rust best practices.
