@@ -20,6 +20,6 @@ You can install it via [rustup.rs](https://rustup.rs)
 ### Build and Run
 
 ```bash
-git clone https://github.com/anthonycabreralara/chess-engine-rs.git
-cd chess-engine-rs
+git clone https://github.com/anthonycabreralara/toyfish-rs.git
+cd toyfish-rs
 cargo build --release
