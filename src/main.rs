@@ -129,6 +129,7 @@ impl Chess {
                 println!("{} : {}", piece, offset)
             }
         }
+        
     }
 }
 
