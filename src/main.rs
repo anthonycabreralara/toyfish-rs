@@ -119,8 +119,7 @@ impl Chess {
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let chess = Chess::new("settings.json")?;
     // chess.print_board()
-    // chess.generate_moves();
-    print!("{:?}", chess.colors);
+    chess.generate_moves();
 
     Ok(())
 }
