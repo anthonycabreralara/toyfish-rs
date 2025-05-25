@@ -8,6 +8,7 @@ struct Settings {
     fen: String,
     pieces: HashMap<char, char>,
     colors: HashMap<char, i32>,
+    directions: HashMap<char, Vec<i32>>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -21,6 +22,7 @@ struct Chess {
     side: Side,
     pieces: HashMap<char, char>,
     colors: HashMap<char, i32>,
+    directions: HashMap<char, Vec<i32>>,
 }
 
 impl Chess {
@@ -82,6 +84,7 @@ impl Chess {
             side,
             pieces: settings.pieces,
             colors: settings.colors,
+            directions: settings.directions,
         })
     }
 
@@ -105,14 +108,29 @@ impl Chess {
     }
 
     fn generate_moves(&self) {
-        for i in 0..self.board.len() {
-            let piece = self.board[i];
-            if !matches!(piece, ' ' | '.' | '\n') {
-                println!("{}: {}", i, piece);
-            }
+    for i in 0..self.board.len() {
+        let piece = self.board[i];
+
+        // Skip non-piece characters
+        if matches!(piece, ' ' | '.' | '\n') {
+            continue;
         }
 
+        let piece_side = self.colors[&piece];
+
+        let piece_side_enum = match piece_side {
+            0 => Side::White,
+            1 => Side::Black,
+            _ => continue,
+        };
+
+        if piece_side_enum == self.side {
+            for offset in self.directions[&piece].clone() {
+                println!("{} : {}", piece, offset)
+            }
+        }
     }
+}
 
 }
 
@@ -120,6 +138,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let chess = Chess::new("settings.json")?;
     // chess.print_board()
     chess.generate_moves();
+
+    // print!("{:#?}", chess.directions);
 
     Ok(())
 }
