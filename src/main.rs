@@ -190,7 +190,7 @@ impl Chess {
                         }
 
                         if matches!(captured_piece, 'K' | 'k') {
-                            // Return empty vector when i define move struct
+                            return Vec::new();
                         }
 
                         move_list.push(Move {
