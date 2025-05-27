@@ -9,6 +9,8 @@ struct Settings {
     pieces: HashMap<char, char>,
     colors: HashMap<char, i32>,
     directions: HashMap<char, Vec<i32>>,
+    rank_2: Vec<i32>,
+    rank_7: Vec<i32>,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -17,12 +19,22 @@ enum Side {
     Black,
 }
 
+#[derive(Debug)]
+struct Move {
+    source: usize,
+    target: usize,
+    piece: char,
+    captured_piece: char,
+}
+
 struct Chess {
     board: Vec<char>,
     side: Side,
     pieces: HashMap<char, char>,
     colors: HashMap<char, i32>,
     directions: HashMap<char, Vec<i32>>,
+    rank_2: Vec<i32>,
+    rank_7: Vec<i32>,
 }
 
 impl Chess {
@@ -85,6 +97,8 @@ impl Chess {
             pieces: settings.pieces,
             colors: settings.colors,
             directions: settings.directions,
+            rank_2: settings.rank_2,
+            rank_7: settings.rank_7,
         })
     }
 
@@ -107,38 +121,109 @@ impl Chess {
         println!("{}\n{}", board_str, side_num);
     }
 
-    fn generate_moves(&self) {
-    for i in 0..self.board.len() {
-        let piece = self.board[i];
+    fn generate_moves(&self) -> Vec<Move> {
+        let mut move_list: Vec<Move> = Vec::new();
+        for i in 0..self.board.len() {
+            let piece = self.board[i];
 
-        // Skip non-piece characters
-        if matches!(piece, ' ' | '.' | '\n') {
-            continue;
-        }
-
-        let piece_side = self.colors[&piece];
-
-        let piece_side_enum = match piece_side {
-            0 => Side::White,
-            1 => Side::Black,
-            _ => continue,
-        };
-
-        if piece_side_enum == self.side {
-            for offset in self.directions[&piece].clone() {
-                println!("{} : {}", piece, offset)
+            // Skip non-piece characters
+            if matches!(piece, ' ' | '.' | '\n') {
+                continue;
             }
+
+            let piece_side = self.colors[&piece];
+
+            let piece_side_enum = match piece_side {
+                0 => Side::White,
+                1 => Side::Black,
+                _ => continue,
+            };
+
+            if piece_side_enum == self.side {
+                for offset in self.directions[&piece].clone() {
+                    let mut target_square= i as i32;
+                    while true {
+                        target_square = target_square + offset;
+                        let captured_piece = self.board[target_square as usize];
+                        if matches!(captured_piece, ' ' | '\n') {
+                            break;
+                        }
+                        
+                        let captured_piece_side = self.colors[&captured_piece];
+
+                        let captured_piece_side_enum = match captured_piece_side {
+                            0 => Side::White,
+                            1 => Side::Black,
+                            _ => continue,
+                        };
+                        
+                        if captured_piece_side_enum == self.side {
+                            break;
+                        }
+
+                        if matches!(piece, 'P' | 'p') && matches!(offset, 9 | 11 | -9 | -11) && captured_piece == '.' {
+                            break;
+                        }
+
+                        if matches!(piece, 'P' | 'p') && matches!(offset, 10 | 20 | -11 | -20) && captured_piece != '.' {
+                            break;
+                        }
+
+                        if matches!(piece, 'P') && matches!(offset, -20) {
+                            if !self.rank_2.contains(&(i as i32)) {
+                                break;
+                            }
+
+                            if self.board[i - 10] != '.' {
+                                break;
+                            }
+                        }
+
+                        if matches!(piece, 'p') && matches!(offset, 20) {
+                            if !self.rank_7.contains(&(i as i32)) {
+                                break;
+                            }
+
+                            if self.board[i + 10] != '.' {
+                                break;
+                            }
+                        }
+
+                        if matches!(captured_piece, 'K' | 'k') {
+                            // Return empty vector when i define move struct
+                        }
+
+                        move_list.push(Move {
+                            source: i,
+                            target: target_square as usize,
+                            piece: piece,
+                            captured_piece: captured_piece
+                        });
+
+                        if self.colors[&captured_piece] == captured_piece_side ^ 1 {
+                            break;
+                        }
+
+                        if matches!(piece, 'P' | 'p' | 'N' | 'n' | 'K' | 'k') {
+                            break;
+                        }
+                    }
+                }
+            }
+
         }
-        
+        return move_list;
     }
-}
 
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let chess = Chess::new("settings.json")?;
     // chess.print_board()
-    chess.generate_moves();
+    let move_list: Vec<Move> = chess.generate_moves();
+    for (i, move_item) in move_list.iter().enumerate() {
+        println!("Move {}: {:?}", i, move_item);
+    }
 
     // print!("{:#?}", chess.directions);
 
