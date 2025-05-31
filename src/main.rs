@@ -142,7 +142,7 @@ impl Chess {
             if piece_side_enum == self.side {
                 for offset in self.directions[&piece].clone() {
                     let mut target_square= i as i32;
-                    while true {
+                    loop {
                         target_square = target_square + offset;
                         let captured_piece = self.board[target_square as usize];
                         if matches!(captured_piece, ' ' | '\n') {
@@ -215,14 +215,50 @@ impl Chess {
         return move_list;
     }
 
+    fn make_move(&mut self, chess_move: &Move) {
+        self.board[chess_move.target] = chess_move.piece;
+        self.board[chess_move.source] = '.';
+        if chess_move.piece == 'P' && self.rank_7.contains(&(chess_move.source as i32)) {
+            self.board[chess_move.target] = 'Q';
+        }
+        if chess_move.piece == 'p' && self.rank_2.contains(&(chess_move.source as i32)) {
+            self.board[chess_move.target] = 'q';
+        }
+
+        
+
+        if self.side == Side::Black {
+            self.side = Side::White;
+        } else {
+            self.side = Side::Black;
+        }
+
+        self.print_board();
+
+    }
+
+    fn take_back(&mut self, chess_move: &Move) {
+        self.board[chess_move.target] = chess_move.captured_piece;
+        self.board[chess_move.source] = chess_move.piece;
+
+        if self.side == Side::Black {
+            self.side = Side::White;
+        } else {
+            self.side = Side::Black;
+        }
+
+        self.print_board();
+    }
+
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let chess = Chess::new("settings.json")?;
+    let mut chess = Chess::new("settings.json")?;
     // chess.print_board()
     let move_list: Vec<Move> = chess.generate_moves();
     for (i, move_item) in move_list.iter().enumerate() {
-        println!("Move {}: {:?}", i, move_item);
+        chess.make_move(move_item);
+        chess.take_back(move_item);
     }
 
     // print!("{:#?}", chess.directions);
