@@ -66,12 +66,12 @@ impl Chess {
 
         // Create 10x10 board with borders
         let mut board = Vec::new();
-        
+
         // Top padding: two empty rows
         for _ in 0..2 {
             board.extend("         \n".chars());
         }
-        
+
         // Board rows with leading space
         for line in board_chars.lines() {
             board.push(' ');
@@ -123,6 +123,18 @@ impl Chess {
 
     fn generate_moves(&self) -> Vec<Move> {
         let mut move_list: Vec<Move> = Vec::new();
+
+        // Helper function to check if a square is within the 8x8 board
+        fn is_valid_square(index: i32) -> bool {
+            // Playable board is from index 21 (a1) to 98 (h8), excluding borders
+            if index < 21 || index > 98 {
+                return false;
+            }
+            // Check if the square is in the playable 8x8 area (columns 1-8)
+            let col = index % 10;
+            col >= 1 && col <= 8
+        }
+
         for i in 0..self.board.len() {
             let piece = self.board[i];
 
@@ -131,7 +143,11 @@ impl Chess {
                 continue;
             }
 
-            let piece_side = self.colors[&piece];
+            // Get piece color and verify side
+            let piece_side = match self.colors.get(&piece) {
+                Some(&color) => color,
+                None => continue, // Skip if piece not in colors map
+            };
 
             let piece_side_enum = match piece_side {
                 0 => Side::White,
@@ -139,80 +155,119 @@ impl Chess {
                 _ => continue,
             };
 
-            if piece_side_enum == self.side {
-                for offset in self.directions[&piece].clone() {
-                    let mut target_square= i as i32;
-                    loop {
-                        target_square = target_square + offset;
+            if piece_side_enum != self.side {
+                continue;
+            }
+
+            for &offset in self.directions[&piece].iter() {
+                let mut target_square = i as i32 + offset;
+
+                // Handle pawn special cases separately
+                if matches!(piece, 'P' | 'p') {
+                    let is_white = piece == 'P';
+                    let forward = if is_white { -10 } else { 10 };
+                    let double_forward = if is_white { -20 } else { 20 };
+                    let captures = if is_white { [-11, -9] } else { [9, 11] };
+
+                    // Single forward move
+                    if offset == forward && is_valid_square(target_square) {
                         let captured_piece = self.board[target_square as usize];
-                        if matches!(captured_piece, ' ' | '\n') {
-                            break;
+                        if captured_piece == '.' {
+                            move_list.push(Move {
+                                source: i,
+                                target: target_square as usize,
+                                piece,
+                                captured_piece,
+                            });
                         }
-                        
-                        let captured_piece_side = self.colors[&captured_piece];
+                    }
 
-                        let captured_piece_side_enum = match captured_piece_side {
-                            0 => Side::White,
-                            1 => Side::Black,
-                            _ => continue,
-                        };
-                        
-                        if captured_piece_side_enum == self.side {
-                            break;
+                    // Double forward move
+                    if offset == double_forward && is_valid_square(target_square) {
+                        let start_rank = if is_white { &self.rank_2 } else { &self.rank_7 };
+                        let intermediate = i as i32 + forward;
+                        if start_rank.contains(&(i as i32))
+                            && self.board[intermediate as usize] == '.'
+                            && self.board[target_square as usize] == '.'
+                        {
+                            move_list.push(Move {
+                                source: i,
+                                target: target_square as usize,
+                                piece,
+                                captured_piece: '.',
+                            });
                         }
+                    }
 
-                        if matches!(piece, 'P' | 'p') && matches!(offset, 9 | 11 | -9 | -11) && captured_piece == '.' {
-                            break;
-                        }
-
-                        if matches!(piece, 'P' | 'p') && matches!(offset, 10 | 20 | -11 | -20) && captured_piece != '.' {
-                            break;
-                        }
-
-                        if matches!(piece, 'P') && matches!(offset, -20) {
-                            if !self.rank_2.contains(&(i as i32)) {
-                                break;
+                    // Captures
+                    if captures.contains(&offset) && is_valid_square(target_square) {
+                        let captured_piece = self.board[target_square as usize];
+                        if captured_piece != '.'
+                            && captured_piece != ' '
+                            && captured_piece != '\n'
+                        {
+                            if let Some(&captured_side) = self.colors.get(&captured_piece) {
+                                if captured_side != piece_side {
+                                    move_list.push(Move {
+                                        source: i,
+                                        target: target_square as usize,
+                                        piece,
+                                        captured_piece,
+                                    });
+                                }
                             }
-
-                            if self.board[i - 10] != '.' {
-                                break;
-                            }
                         }
+                    }
 
-                        if matches!(piece, 'p') && matches!(offset, 20) {
-                            if !self.rank_7.contains(&(i as i32)) {
-                                break;
-                            }
+                    continue; // Skip further processing for pawns
+                }
 
-                            if self.board[i + 10] != '.' {
-                                break;
-                            }
-                        }
+                // Non-pawn pieces (sliding and non-sliding)
+                loop {
+                    if !is_valid_square(target_square) {
+                        break;
+                    }
 
-                        if matches!(captured_piece, 'K' | 'k') {
-                            return Vec::new();
-                        }
+                    let captured_piece = self.board[target_square as usize];
+                    if matches!(captured_piece, ' ' | '\n') {
+                        break;
+                    }
 
+                    // Add move for empty square
+                    if captured_piece == '.' {
                         move_list.push(Move {
                             source: i,
                             target: target_square as usize,
-                            piece: piece,
-                            captured_piece: captured_piece
+                            piece,
+                            captured_piece,
                         });
-
-                        if self.colors[&captured_piece] == captured_piece_side ^ 1 {
-                            break;
+                    } else {
+                        // Handle capture
+                        if let Some(&captured_side) = self.colors.get(&captured_piece) {
+                            if captured_side != piece_side && !matches!(captured_piece, 'K' | 'k') {
+                                move_list.push(Move {
+                                    source: i,
+                                    target: target_square as usize,
+                                    piece,
+                                    captured_piece,
+                                });
+                            }
                         }
-
-                        if matches!(piece, 'P' | 'p' | 'N' | 'n' | 'K' | 'k') {
-                            break;
-                        }
+                        break; // Stop after hitting a piece (friendly or enemy)
                     }
+
+                    // Stop for non-sliding pieces
+                    if matches!(piece, 'N' | 'n' | 'K' | 'k') {
+                        break;
+                    }
+
+                    // Continue sliding
+                    target_square += offset;
                 }
             }
-
         }
-        return move_list;
+
+        move_list
     }
 
     fn make_move(&mut self, chess_move: &Move) {
@@ -225,43 +280,35 @@ impl Chess {
             self.board[chess_move.target] = 'q';
         }
 
-        
-
-        if self.side == Side::Black {
-            self.side = Side::White;
-        } else {
-            self.side = Side::Black;
-        }
-
         self.print_board();
 
+        self.side = match self.side {
+            Side::White => Side::Black,
+            Side::Black => Side::White,
+        };
     }
 
     fn take_back(&mut self, chess_move: &Move) {
         self.board[chess_move.target] = chess_move.captured_piece;
         self.board[chess_move.source] = chess_move.piece;
 
-        if self.side == Side::Black {
-            self.side = Side::White;
-        } else {
-            self.side = Side::Black;
-        }
-
         self.print_board();
-    }
 
+        self.side = match self.side {
+            Side::White => Side::Black,
+            Side::Black => Side::White,
+        };
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut chess = Chess::new("settings.json")?;
-    // chess.print_board()
     let move_list: Vec<Move> = chess.generate_moves();
-    for (i, move_item) in move_list.iter().enumerate() {
+
+    for move_item in move_list.iter() {
         chess.make_move(move_item);
         chess.take_back(move_item);
     }
-
-    // print!("{:#?}", chess.directions);
 
     Ok(())
 }
