@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::File;
+use std::future::pending;
 use std::io::Read;
 
 #[derive(Deserialize)]
@@ -9,6 +10,8 @@ struct Settings {
     pieces: HashMap<char, char>,
     colors: HashMap<char, i32>,
     directions: HashMap<char, Vec<i32>>,
+    weights: HashMap<char, i32>,
+    pst: Vec<i32>,
     rank_2: Vec<i32>,
     rank_7: Vec<i32>,
 }
@@ -33,6 +36,8 @@ struct Chess {
     pieces: HashMap<char, char>,
     colors: HashMap<char, i32>,
     directions: HashMap<char, Vec<i32>>,
+    weights: HashMap<char, i32>,
+    pst: Vec<i32>,
     rank_2: Vec<i32>,
     rank_7: Vec<i32>,
 }
@@ -97,6 +102,8 @@ impl Chess {
             pieces: settings.pieces,
             colors: settings.colors,
             directions: settings.directions,
+            weights: settings.weights,
+            pst: settings.pst,
             rank_2: settings.rank_2,
             rank_7: settings.rank_7,
         })
@@ -299,16 +306,39 @@ impl Chess {
             Side::Black => Side::White,
         };
     }
+
+    fn evaluate(&self) -> i32 {
+      let mut score = 0;
+      for i in 0..self.board.len() {
+        let piece = self.board[i];
+        if !matches!(piece, ' ' | '.' | '\n') {
+
+          score = score + self.weights[&piece];
+          if piece.is_uppercase() {
+            score = score + self.pst[i];
+          }
+
+          if !piece.is_uppercase() {
+            score = score - self.pst[i];
+          }
+        }
+      }
+
+      return if self.side == Side::White { score } else { -score };
+    }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut chess = Chess::new("settings.json")?;
     let move_list: Vec<Move> = chess.generate_moves();
 
-    for move_item in move_list.iter() {
-        chess.make_move(move_item);
-        chess.take_back(move_item);
-    }
+    let eval = chess.evaluate();
+    println!("Eval: {}", eval);
+
+    // for move_item in move_list.iter() {
+    //     chess.make_move(move_item);
+    //     chess.take_back(move_item);
+    // }
 
     Ok(())
 }
