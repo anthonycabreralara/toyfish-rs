@@ -40,6 +40,8 @@ struct Chess {
     pst: Vec<i32>,
     rank_2: Vec<i32>,
     rank_7: Vec<i32>,
+    best_source: i32,
+    best_target: i32,
 }
 
 impl Chess {
@@ -106,6 +108,8 @@ impl Chess {
             pst: settings.pst,
             rank_2: settings.rank_2,
             rank_7: settings.rank_7,
+            best_source: -1,
+            best_target: -1,
         })
     }
 
@@ -325,6 +329,36 @@ impl Chess {
       }
 
       return if self.side == Side::White { score } else { -score };
+    }
+
+    fn search(&mut self, depth: i32) -> i32 {
+      if depth == 0 {
+        return self.evaluate();
+      }
+      let mut best_score= -10000;
+      let mut best_source: i32 = -1;
+      let mut best_target: i32 = -1;
+
+      let move_list = self.generate_moves();
+
+      if move_list.is_empty() {
+        return 10000;
+      }
+
+      for chess_move in move_list {
+        self.make_move(&chess_move);
+        let score = -self.search(depth - 1);
+        self.take_back(&chess_move);
+        if score > best_score {
+          best_score = score;
+          best_source = chess_move.source as i32;
+          best_target = chess_move.target as i32;
+        }
+      }
+
+      self.best_source = best_source;
+      self.best_target = best_target;
+      return best_score;
     }
 }
 
